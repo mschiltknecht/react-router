@@ -68,7 +68,7 @@
     }
   },
   "dependencies": {
-    "@mjackson/node-fetch-server": "^0.1.0"
+    "@mjackson/node-fetch-server": "^0.2.0"
   },
   "devDependencies": {
     "react-router": "workspace:*",

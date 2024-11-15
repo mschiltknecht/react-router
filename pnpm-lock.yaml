@@ -156,7 +156,7 @@ importers:
         version: 7.34.1(eslint@8.57.0)
       eslint-plugin-react-hooks:
         specifier: next
-        version: 5.1.0-rc-0bc30748-20241028(eslint@8.57.0)
+        version: 5.1.0-rc-b01722d5-20241114(eslint@8.57.0)
       fs-extra:
         specifier: ^10.1.0
         version: 10.1.0
@@ -774,7 +774,7 @@ importers:
         version: 16.4.5
       esbuild-register:
         specifier: ^3.3.2
-        version: 3.5.0(esbuild@0.23.1)
+        version: 3.5.0(esbuild@0.17.19)
       execa:
         specifier: 5.1.1
         version: 5.1.1
@@ -890,8 +890,8 @@ importers:
   packages/react-router-node:
     dependencies:
       '@mjackson/node-fetch-server':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.2.0
+        version: 0.2.0
     devDependencies:
       react-router:
         specifier: workspace:*
@@ -2750,8 +2750,8 @@ packages:
     peerDependencies:
       rollup: '>=2'
 
-  '@mjackson/node-fetch-server@0.1.0':
-    resolution: {integrity: sha512-uFkH4CXsX5dU2sh5Ib9gP2bV4t2OYQph6y7s0kSSDlQ0XnIUXwjBZktXClzQV9BivynXWishvXK3ziItpHRcpw==}
+  '@mjackson/node-fetch-server@0.2.0':
+    resolution: {integrity: sha512-EMlH1e30yzmTpGLQjlFmaDAjyOeZhng1/XCd7DExR8PNAnG/G1tyruZxEoUe11ClnwGhGrtsdnyyUx1frSzjng==}
 
   '@mswjs/cookies@0.2.2':
     resolution: {integrity: sha512-mlN83YSrcFgk7Dm1Mys40DLssI1KdJji2CMKN8eOlBqsTADYzj2+jWzsANsUTFbxDMWPD5e9bfA1RGqBpS3O1g==}
@@ -4662,8 +4662,8 @@ packages:
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0
 
-  eslint-plugin-react-hooks@5.1.0-rc-0bc30748-20241028:
-    resolution: {integrity: sha512-rewMgmolwvtkbULITBMnN/TE7k+OdAxDvvyalLijoD3ZfZMgjrlfOXQgZFPkwAXS5SQOBklagQmqnB7E6gD8ew==}
+  eslint-plugin-react-hooks@5.1.0-rc-b01722d5-20241114:
+    resolution: {integrity: sha512-MtdHtFrEaX6i0WWpz+heHCuAQIvMoCKICIgB39VaiPrwqrMMlWLn01KXSCBhu9aRx0ZQUZbtVV+A/LNR+1FJWA==}
     engines: {node: '>=10'}
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0
@@ -10609,7 +10609,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@mjackson/node-fetch-server@0.1.0': {}
+  '@mjackson/node-fetch-server@0.2.0': {}
 
   '@mswjs/cookies@0.2.2':
     dependencies:
@@ -12824,17 +12824,17 @@ snapshots:
       is-date-object: 1.0.5
       is-symbol: 1.0.4
 
+  esbuild-register@3.5.0(esbuild@0.17.19):
+    dependencies:
+      debug: 4.3.4
+      esbuild: 0.17.19
+    transitivePeerDependencies:
+      - supports-color
+
   esbuild-register@3.5.0(esbuild@0.17.6):
     dependencies:
       debug: 4.3.4
       esbuild: 0.17.6
-    transitivePeerDependencies:
-      - supports-color
-
-  esbuild-register@3.5.0(esbuild@0.23.1):
-    dependencies:
-      debug: 4.3.4
-      esbuild: 0.23.1
     transitivePeerDependencies:
       - supports-color
 
@@ -13124,7 +13124,7 @@ snapshots:
     dependencies:
       eslint: 8.57.0
 
-  eslint-plugin-react-hooks@5.1.0-rc-0bc30748-20241028(eslint@8.57.0):
+  eslint-plugin-react-hooks@5.1.0-rc-b01722d5-20241114(eslint@8.57.0):
     dependencies:
       eslint: 8.57.0
 
@@ -15942,7 +15942,7 @@ snapshots:
   postcss@8.4.38:
     dependencies:
       nanoid: 3.3.7
-      picocolors: 1.0.0
+      picocolors: 1.1.1
       source-map-js: 1.2.0
 
   preferred-pm@3.0.3:

@@ -585,9 +585,6 @@ importers:
         specifier: ^8.10.82
         version: 8.10.141
     devDependencies:
-      '@react-router/node':
-        specifier: workspace:*
-        version: link:../react-router-node
       '@types/lambda-tester':
         specifier: ^3.6.1
         version: 3.6.2

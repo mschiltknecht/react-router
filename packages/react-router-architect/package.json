@@ -53,7 +53,6 @@
     "@types/aws-lambda": "^8.10.82"
   },
   "devDependencies": {
-    "@react-router/node": "workspace:*",
     "@types/lambda-tester": "^3.6.1",
     "@types/node": "^18.17.1",
     "lambda-tester": "^4.0.1",
@@ -65,7 +64,6 @@
     "wireit": "0.14.9"
   },
   "peerDependencies": {
-    "@react-router/node": "workspace:^",
     "react-router": "workspace:^",
     "typescript": "^5.1.0"
   },

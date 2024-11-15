@@ -1,6 +1,5 @@
 import type { AppLoadContext, ServerBuild } from "react-router";
 import { createRequestHandler as createReactRouterRequestHandler } from "react-router";
-import { readableStreamToString } from "@react-router/node";
 import type {
   APIGatewayProxyEventHeaders,
   APIGatewayProxyEventV2,
@@ -95,38 +94,54 @@ export function createReactRouterHeaders(
 }
 
 export async function sendReactRouterResponse(
-  nodeResponse: Response
+  response: Response
 ): Promise<APIGatewayProxyStructuredResultV2> {
   let cookies: string[] = [];
 
   // Arc/AWS API Gateway will send back set-cookies outside of response headers.
-  for (let [key, value] of nodeResponse.headers.entries()) {
+  for (let [key, value] of response.headers.entries()) {
     if (key.toLowerCase() === "set-cookie") {
       cookies.push(value);
     }
   }
 
   if (cookies.length) {
-    nodeResponse.headers.delete("Set-Cookie");
+    response.headers.delete("Set-Cookie");
   }
 
-  let contentType = nodeResponse.headers.get("Content-Type");
+  let contentType = response.headers.get("Content-Type");
   let isBase64Encoded = isBinaryType(contentType);
   let body: string | undefined;
 
-  if (nodeResponse.body) {
+  if (response.body) {
     if (isBase64Encoded) {
-      body = await readableStreamToString(nodeResponse.body, "base64");
+      body = await readableStreamToString(response.body, "base64");
     } else {
-      body = await nodeResponse.text();
+      body = await response.text();
     }
   }
 
   return {
-    statusCode: nodeResponse.status,
-    headers: Object.fromEntries(nodeResponse.headers.entries()),
+    statusCode: response.status,
+    headers: Object.fromEntries(response.headers.entries()),
     cookies,
     body,
     isBase64Encoded,
   };
+}
+
+async function readableStreamToString(
+  stream: ReadableStream<Uint8Array>,
+  encoding: string
+): Promise<string> {
+  let decoder = new TextDecoder(encoding);
+
+  let string = "";
+  for await (let chunk of stream) {
+    string += decoder.decode(chunk, { stream: true });
+  }
+
+  string += decoder.decode();
+
+  return string;
 }

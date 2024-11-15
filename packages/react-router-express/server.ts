@@ -5,10 +5,6 @@
 import type * as express from "express";
 import type { AppLoadContext, ServerBuild } from "react-router";
 import { createRequestHandler as createRemixRequestHandler } from "react-router";
-import {
-  createReadableStreamFromReadable,
-  writeReadableStreamToWritable,
-} from "@react-router/node";
 
 /**
  * A function that returns the value to use as `context` in route `loader` and
@@ -113,7 +109,23 @@ export function createRemixRequest(
   res.on("close", () => controller?.abort());
 
   if (req.method !== "GET" && req.method !== "HEAD") {
-    init.body = createReadableStreamFromReadable(req);
+    init.body = new ReadableStream({
+      start(controller) {
+        req.on("data", (chunk) => {
+          controller.enqueue(
+            new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+          );
+        });
+        req.on("end", () => {
+          controller.close();
+        });
+      },
+    });
+
+    // init.duplex = 'half' must be set when body is a ReadableStream, and Node follows the spec.
+    // However, this property is not defined in the TypeScript types for RequestInit, so we have
+    // to cast it here in order to set it without a type error.
+    // See https://fetch.spec.whatwg.org/#dom-requestinit-duplex
     (init as { duplex: "half" }).duplex = "half";
   }
 
@@ -122,22 +134,24 @@ export function createRemixRequest(
 
 export async function sendRemixResponse(
   res: express.Response,
-  nodeResponse: Response
+  response: Response
 ): Promise<void> {
-  res.statusMessage = nodeResponse.statusText;
-  res.status(nodeResponse.status);
+  res.statusMessage = response.statusText;
+  res.status(response.status);
 
-  for (let [key, value] of nodeResponse.headers.entries()) {
+  for (let [key, value] of response.headers.entries()) {
     res.append(key, value);
   }
 
-  if (nodeResponse.headers.get("Content-Type")?.match(/text\/event-stream/i)) {
+  if (response.headers.get("Content-Type")?.match(/text\/event-stream/i)) {
     res.flushHeaders();
   }
 
-  if (nodeResponse.body) {
-    await writeReadableStreamToWritable(nodeResponse.body, res);
-  } else {
-    res.end();
+  if (response.body) {
+    for await (let chunk of response.body) {
+      res.write(chunk);
+    }
   }
+
+  res.end();
 }

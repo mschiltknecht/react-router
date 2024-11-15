@@ -833,9 +833,6 @@ importers:
 
   packages/react-router-express:
     dependencies:
-      '@react-router/node':
-        specifier: workspace:*
-        version: link:../react-router-node
       react-router:
         specifier: workspace:*
         version: link:../react-router

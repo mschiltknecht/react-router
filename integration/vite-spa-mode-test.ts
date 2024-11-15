@@ -338,10 +338,9 @@ test.describe("SPA Mode", () => {
           "app/entry.server.tsx": js`
             import * as fs from "node:fs";
             import * as path from "node:path";
-            import { PassThrough } from "node:stream";
+            import * as stream from "node:stream";
 
-            import type { AppLoadContext, EntryContext } from "react-router";
-            import { createReadableStreamFromReadable } from "@react-router/node";
+            import type { EntryContext } from "react-router";
             import { ServerRouter } from "react-router";
             import { renderToPipeableStream } from "react-dom/server";
 
@@ -352,7 +351,6 @@ test.describe("SPA Mode", () => {
               responseStatusCode: number,
               responseHeaders: Headers,
               remixContext: EntryContext,
-              loadContext: AppLoadContext
             ) {
               return handleBotRequest(
                 request,
@@ -379,19 +377,19 @@ test.describe("SPA Mode", () => {
                   {
                     onAllReady() {
                       shellRendered = true;
-                      const body = new PassThrough();
-                      const stream = createReadableStreamFromReadable(body);
+                      const passthru = new stream.PassThrough();
+                      const body = createReadableStreamFromReadable(passthru);
 
                       responseHeaders.set("Content-Type", "text/html");
 
                       resolve(
-                        new Response(stream, {
+                        new Response(body, {
                           headers: responseHeaders,
                           status: responseStatusCode,
                         }).text()
                       );
 
-                      pipe(body);
+                      pipe(passthru);
                     },
                     onShellError(error: unknown) {
                       reject(error);
@@ -421,6 +419,23 @@ test.describe("SPA Mode", () => {
               return new Response(finalHTML, {
                 headers: responseHeaders,
                 status: responseStatusCode,
+              });
+            }
+
+            function createReadableStreamFromReadable(
+              readable: stream.Readable
+            ): ReadableStream<Uint8Array> {
+              return new ReadableStream({
+                start(controller) {
+                  readable.on("data", (chunk) => {
+                    controller.enqueue(
+                      new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+                    );
+                  });
+                  readable.on("end", () => {
+                    controller.close();
+                  });
+                },
               });
             }
           `,

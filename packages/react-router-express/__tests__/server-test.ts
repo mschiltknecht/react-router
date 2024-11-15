@@ -1,9 +1,7 @@
-import { Readable } from "node:stream";
-import { createRequestHandler as createRemixRequestHandler } from "react-router";
-import { createReadableStreamFromReadable } from "@react-router/node";
 import express from "express";
-import { createRequest, createResponse } from "node-mocks-http";
 import supertest from "supertest";
+import { createRequest, createResponse } from "node-mocks-http";
+import { createRequestHandler as createRemixRequestHandler } from "react-router";
 
 import {
   createRemixHeaders,
@@ -100,8 +98,12 @@ describe("express createRequestHandler", () => {
     // https://github.com/node-fetch/node-fetch/blob/4ae35388b078bddda238277142bf091898ce6fda/test/response.js#L142-L148
     it("handles body as stream", async () => {
       mockedCreateRequestHandler.mockImplementation(() => async () => {
-        let readable = Readable.from("hello world");
-        let stream = createReadableStreamFromReadable(readable);
+        let stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode("hello world"));
+            controller.close();
+          },
+        });
         return new Response(stream, { status: 200 });
       });
 

@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+
 import type { Files } from "./helpers/vite.js";
 import { test, viteConfig } from "./helpers/vite.js";
 
@@ -7,10 +8,9 @@ const js = String.raw;
 const files: Files = async ({ port }) => ({
   "vite.config.ts": await viteConfig.basic({ port }),
   "app/entry.server.tsx": js`
-    import { PassThrough } from "node:stream";
+    import * as stream from "node:stream";
 
     import type { EntryContext } from "react-router";
-    import { createReadableStreamFromReadable } from "@react-router/node";
     import { ServerRouter } from "react-router";
     import { renderToPipeableStream } from "react-dom/server";
 
@@ -33,8 +33,8 @@ const files: Files = async ({ port }) => ({
           {
             onShellReady() {
               shellRendered = true;
-              const body = new PassThrough();
-              const stream = createReadableStreamFromReadable(body);
+              const passthru = new stream.PassThrough();
+              const body = createReadableStreamFromReadable(passthru);
 
               responseHeaders.set("Content-Type", "text/html");
 
@@ -42,13 +42,13 @@ const files: Files = async ({ port }) => ({
               responseHeaders.set("x-test-request-instanceof-request", String(request instanceof Request));
 
               resolve(
-                new Response(stream, {
+                new Response(body, {
                   headers: responseHeaders,
                   status: responseStatusCode,
                 })
               );
 
-              pipe(body);
+              pipe(passthru);
             },
             onShellError(error: unknown) {
               reject(error);
@@ -66,6 +66,23 @@ const files: Files = async ({ port }) => ({
         );
 
         setTimeout(abort, ABORT_DELAY);
+      });
+    }
+
+    function createReadableStreamFromReadable(
+      readable: stream.Readable
+    ): ReadableStream<Uint8Array> {
+      return new ReadableStream({
+        start(controller) {
+          readable.on("data", (chunk) => {
+            controller.enqueue(
+              new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+            );
+          });
+          readable.on("end", () => {
+            controller.close();
+          });
+        },
       });
     }
   `,

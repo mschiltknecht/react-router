@@ -966,9 +966,6 @@ importers:
 
   playground/compiler:
     dependencies:
-      '@react-router/node':
-        specifier: workspace:*
-        version: link:../../packages/react-router-node
       '@react-router/serve':
         specifier: workspace:*
         version: link:../../packages/react-router-serve
@@ -1009,9 +1006,6 @@ importers:
       '@react-router/express':
         specifier: workspace:*
         version: link:../../packages/react-router-express
-      '@react-router/node':
-        specifier: workspace:*
-        version: link:../../packages/react-router-node
       compression:
         specifier: ^1.7.4
         version: 1.7.4
@@ -1067,9 +1061,6 @@ importers:
 
   playground/compiler-spa:
     dependencies:
-      '@react-router/node':
-        specifier: workspace:*
-        version: link:../../packages/react-router-node
       react:
         specifier: ^18.2.0
         version: 18.2.0

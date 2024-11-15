@@ -1,10 +1,9 @@
-import { PassThrough } from "node:stream";
+import * as stream from "node:stream";
 
-import type { AppLoadContext, EntryContext } from "react-router";
-import { createReadableStreamFromReadable } from "@react-router/node";
+import type { EntryContext } from "react-router";
 import { ServerRouter } from "react-router";
-import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
+import { isbot } from "isbot";
 
 const ABORT_DELAY = 5_000;
 
@@ -12,8 +11,7 @@ export default function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  reactRouterContext: EntryContext,
-  loadContext: AppLoadContext
+  reactRouterContext: EntryContext
 ) {
   return isbot(request.headers.get("user-agent") || "")
     ? handleBotRequest(
@@ -47,19 +45,19 @@ function handleBotRequest(
       {
         onAllReady() {
           shellRendered = true;
-          const body = new PassThrough();
-          const stream = createReadableStreamFromReadable(body);
+          const passthru = new stream.PassThrough();
+          const body = createReadableStreamFromReadable(passthru);
 
           responseHeaders.set("Content-Type", "text/html");
 
           resolve(
-            new Response(stream, {
+            new Response(body, {
               headers: responseHeaders,
               status: responseStatusCode,
             })
           );
 
-          pipe(body);
+          pipe(passthru);
         },
         onShellError(error: unknown) {
           reject(error);
@@ -97,19 +95,19 @@ function handleBrowserRequest(
       {
         onShellReady() {
           shellRendered = true;
-          const body = new PassThrough();
-          const stream = createReadableStreamFromReadable(body);
+          const passthru = new stream.PassThrough();
+          const body = createReadableStreamFromReadable(passthru);
 
           responseHeaders.set("Content-Type", "text/html");
 
           resolve(
-            new Response(stream, {
+            new Response(body, {
               headers: responseHeaders,
               status: responseStatusCode,
             })
           );
 
-          pipe(body);
+          pipe(passthru);
         },
         onShellError(error: unknown) {
           reject(error);
@@ -127,5 +125,22 @@ function handleBrowserRequest(
     );
 
     setTimeout(abort, ABORT_DELAY);
+  });
+}
+
+function createReadableStreamFromReadable(
+  readable: stream.Readable
+): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      readable.on("data", (chunk) => {
+        controller.enqueue(
+          new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+        );
+      });
+      readable.on("end", () => {
+        controller.close();
+      });
+    },
   });
 }

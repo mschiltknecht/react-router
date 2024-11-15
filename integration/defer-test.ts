@@ -924,12 +924,12 @@ test.describe("aborted", () => {
     fixture = await createFixture({
       files: {
         "app/entry.server.tsx": js`
-          import { PassThrough } from "node:stream";
-          import type { AppLoadContext, EntryContext } from "react-router";
-          import { createReadableStreamFromReadable } from "@react-router/node";
+          import * as stream from "node:stream";
+
+          import type { EntryContext } from "react-router";
           import { ServerRouter } from "react-router";
-          import { isbot } from "isbot";
           import { renderToPipeableStream } from "react-dom/server";
+          import { isbot } from "isbot";
 
           // Exported for use by the server runtime so we can abort the
           // turbo-stream encode() call
@@ -941,7 +941,6 @@ test.describe("aborted", () => {
             responseStatusCode: number,
             responseHeaders: Headers,
             remixContext: EntryContext,
-            loadContext: AppLoadContext,
           ) {
             return isbot(request.headers.get("user-agent") || "")
               ? handleBotRequest(
@@ -971,19 +970,19 @@ test.describe("aborted", () => {
                 <ServerRouter context={remixContext} url={request.url} />,
                 {
                   onAllReady() {
-                    let body = new PassThrough();
-                    let stream = createReadableStreamFromReadable(body);
+                    let passthru = new stream.PassThrough();
+                    let body = createReadableStreamFromReadable(passthru);
 
                     responseHeaders.set("Content-Type", "text/html");
 
                     resolve(
-                      new Response(stream, {
+                      new Response(body, {
                         headers: responseHeaders,
                         status: didError ? 500 : responseStatusCode,
                       })
                     );
 
-                    pipe(body);
+                    pipe(passthru);
                   },
                   onShellError(error: unknown) {
                     reject(error);
@@ -1013,19 +1012,19 @@ test.describe("aborted", () => {
                 <ServerRouter context={remixContext} url={request.url} />,
                 {
                   onShellReady() {
-                    let body = new PassThrough();
-                    let stream = createReadableStreamFromReadable(body);
+                    let passthru = new stream.PassThrough();
+                    let body = createReadableStreamFromReadable(passthru);
 
                     responseHeaders.set("Content-Type", "text/html");
 
                     resolve(
-                      new Response(stream, {
+                      new Response(body, {
                         headers: responseHeaders,
                         status: didError ? 500 : responseStatusCode,
                       })
                     );
 
-                    pipe(body);
+                    pipe(passthru);
                   },
                   onShellError(err: unknown) {
                     reject(err);
@@ -1039,6 +1038,23 @@ test.describe("aborted", () => {
               );
 
               setTimeout(abort, renderTimeout);
+            });
+          }
+
+          function createReadableStreamFromReadable(
+            readable: stream.Readable
+          ): ReadableStream<Uint8Array> {
+            return new ReadableStream({
+              start(controller) {
+                readable.on("data", (chunk) => {
+                  controller.enqueue(
+                    new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+                  );
+                });
+                readable.on("end", () => {
+                  controller.close();
+                });
+              },
             });
           }
         `,

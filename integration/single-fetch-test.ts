@@ -1188,10 +1188,9 @@ test.describe("single-fetch", () => {
       files: {
         ...files,
         "app/entry.server.tsx": js`
-          import { PassThrough } from "node:stream";
+          import * as stream from "node:stream";
 
           import type { EntryContext } from "react-router";
-          import { createReadableStreamFromReadable } from "@react-router/node";
           import { ServerRouter } from "react-router";
           import { renderToPipeableStream } from "react-dom/server";
 
@@ -1206,16 +1205,19 @@ test.describe("single-fetch", () => {
                 <ServerRouter context={remixContext} url={request.url} />,
                 {
                   onShellReady() {
-                    const body = new PassThrough();
-                    const stream = createReadableStreamFromReadable(body);
+                    const passthru = new stream.PassThrough();
+                    const body = createReadableStreamFromReadable(passthru);
+
                     responseHeaders.set("Content-Type", "text/html");
+
                     resolve(
-                      new Response(stream, {
+                      new Response(body, {
                         headers: responseHeaders,
                         status: responseStatusCode,
                       })
                     );
-                    pipe(body);
+
+                    pipe(passthru);
                   },
                   onShellError(error: unknown) {
                     reject(error);
@@ -1225,6 +1227,23 @@ test.describe("single-fetch", () => {
                   },
                 }
               );
+            });
+          }
+
+          function createReadableStreamFromReadable(
+            readable: stream.Readable
+          ): ReadableStream<Uint8Array> {
+            return new ReadableStream({
+              start(controller) {
+                readable.on("data", (chunk) => {
+                  controller.enqueue(
+                    new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+                  );
+                });
+                readable.on("end", () => {
+                  controller.close();
+                });
+              },
             });
           }
 
@@ -1284,10 +1303,9 @@ test.describe("single-fetch", () => {
       files: {
         ...files,
         "app/entry.server.tsx": js`
-          import { PassThrough } from "node:stream";
+          import * as stream from "node:stream";
 
           import type { EntryContext } from "react-router";
-          import { createReadableStreamFromReadable } from "@react-router/node";
           import { ServerRouter } from "react-router";
           import { renderToPipeableStream } from "react-dom/server";
 
@@ -1302,16 +1320,19 @@ test.describe("single-fetch", () => {
                 <ServerRouter context={remixContext} url={request.url} />,
                 {
                   onShellReady() {
-                    const body = new PassThrough();
-                    const stream = createReadableStreamFromReadable(body);
+                    const passthru = new stream.PassThrough();
+                    const body = createReadableStreamFromReadable(passthru);
+
                     responseHeaders.set("Content-Type", "text/html");
+
                     resolve(
-                      new Response(stream, {
+                      new Response(body, {
                         headers: responseHeaders,
                         status: responseStatusCode,
                       })
                     );
-                    pipe(body);
+
+                    pipe(passthru);
                   },
                   onShellError(error: unknown) {
                     reject(error);
@@ -1334,6 +1355,23 @@ test.describe("single-fetch", () => {
               });
             }
             return response;
+          }
+
+          function createReadableStreamFromReadable(
+            readable: stream.Readable
+          ): ReadableStream<Uint8Array> {
+            return new ReadableStream({
+              start(controller) {
+                readable.on("data", (chunk) => {
+                  controller.enqueue(
+                    new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+                  );
+                });
+                readable.on("end", () => {
+                  controller.close();
+                });
+              },
+            });
           }
         `,
         "app/routes/data.tsx": js`
@@ -3468,10 +3506,9 @@ test.describe("single-fetch", () => {
           }
         `,
         "app/entry.server.tsx": js`
-          import { PassThrough } from "node:stream";
+          import * as stream from "node:stream";
 
           import type { EntryContext } from "react-router";
-          import { createReadableStreamFromReadable } from "@react-router/node";
           import { ServerRouter } from "react-router";
           import { renderToPipeableStream } from "react-dom/server";
 
@@ -3486,16 +3523,19 @@ test.describe("single-fetch", () => {
                 <ServerRouter context={remixContext} url={request.url} nonce="the-nonce" />,
                 {
                   onShellReady() {
-                    const body = new PassThrough();
-                    const stream = createReadableStreamFromReadable(body);
+                    const passthru = new stream.PassThrough();
+                    const body = createReadableStreamFromReadable(passthru);
+
                     responseHeaders.set("Content-Type", "text/html");
+
                     resolve(
-                      new Response(stream, {
+                      new Response(body, {
                         headers: responseHeaders,
                         status: responseStatusCode,
                       })
                     );
-                    pipe(body);
+
+                    pipe(passthru);
                   },
                   onShellError(error: unknown) {
                     reject(error);
@@ -3505,6 +3545,23 @@ test.describe("single-fetch", () => {
                   },
                 }
               );
+            });
+          }
+
+          function createReadableStreamFromReadable(
+            readable: stream.Readable
+          ): ReadableStream<Uint8Array> {
+            return new ReadableStream({
+              start(controller) {
+                readable.on("data", (chunk) => {
+                  controller.enqueue(
+                    new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+                  );
+                });
+                readable.on("end", () => {
+                  controller.close();
+                });
+              },
             });
           }
         `,

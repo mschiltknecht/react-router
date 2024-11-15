@@ -1,5 +1,4 @@
-import type { Writable } from "node:stream";
-import { Readable } from "node:stream";
+import * as stream from "node:stream";
 import path from "node:path";
 import url from "node:url";
 import fse from "fs-extra";
@@ -16,7 +15,6 @@ import {
   UNSAFE_decodeViaTurboStream as decodeViaTurboStream,
 } from "react-router";
 import { createRequestHandler as createExpressHandler } from "@react-router/express";
-import { createReadableStreamFromReadable } from "@react-router/node";
 
 import { viteConfig } from "./vite.js";
 
@@ -25,7 +23,7 @@ const root = path.join(__dirname, "../..");
 const TMP_DIR = path.join(root, ".tmp", "integration");
 
 export interface FixtureInit {
-  buildStdio?: Writable;
+  buildStdio?: stream.Writable;
   files?: { [filename: string]: string };
   useReactRouterServe?: boolean;
   spaMode?: boolean;
@@ -113,12 +111,12 @@ export async function createFixture(init: FixtureInit, mode?: ServerMode) {
         let data = fse.readFileSync(
           path.join(projectDir, "build/client", href)
         );
-        let stream = createReadableStreamFromReadable(Readable.from(data));
+        let body = createReadableStreamFromReadable(stream.Readable.from(data));
         return {
           status: 200,
           statusText: "OK",
           headers: new Headers(),
-          data: (await decodeViaTurboStream(stream, global)).value,
+          data: (await decodeViaTurboStream(body, global)).value,
         };
       },
       postDocument: () => {
@@ -190,6 +188,23 @@ export async function createFixture(init: FixtureInit, mode?: ServerMode) {
     getBrowserAsset,
     useReactRouterServe: init.useReactRouterServe,
   };
+}
+
+function createReadableStreamFromReadable(
+  readable: stream.Readable
+): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      readable.on("data", (chunk) => {
+        controller.enqueue(
+          new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+        );
+      });
+      readable.on("end", () => {
+        controller.close();
+      });
+    },
+  });
 }
 
 export async function createAppFixture(fixture: Fixture, mode?: ServerMode) {
@@ -379,7 +394,11 @@ export async function createFixtureProject(
   return projectDir;
 }
 
-function build(projectDir: string, buildStdio?: Writable, mode?: ServerMode) {
+function build(
+  projectDir: string,
+  buildStdio?: stream.Writable,
+  mode?: ServerMode
+) {
   // We have a "require" instead of a dynamic import in readConfig gated
   // behind mode === ServerMode.Test to make jest happy, but that doesn't
   // work for ESM configs, those MUST be dynamic imports. So we need to

@@ -130,18 +130,15 @@ export async function sendReactRouterResponse(
   };
 }
 
-async function readableStreamToString(
+export async function readableStreamToString(
   stream: ReadableStream<Uint8Array>,
-  encoding: string
-): Promise<string> {
-  let decoder = new TextDecoder(encoding);
+  encoding?: BufferEncoding
+) {
+  let chunks: Uint8Array[] = [];
 
-  let string = "";
   for await (let chunk of stream) {
-    string += decoder.decode(chunk, { stream: true });
+    chunks.push(chunk);
   }
 
-  string += decoder.decode();
-
-  return string;
+  return Buffer.concat(chunks).toString(encoding);
 }

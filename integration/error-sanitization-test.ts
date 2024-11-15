@@ -491,9 +491,8 @@ test.describe("Error Sanitization", () => {
         {
           files: {
             "app/entry.server.tsx": js`
-              import { PassThrough } from "node:stream";
+              import * as stream from "node:stream";
 
-              import { createReadableStreamFromReadable } from "@react-router/node";
               import { ServerRouter, isRouteErrorResponse } from "react-router";
               import { renderToPipeableStream } from "react-dom/server";
 
@@ -516,19 +515,19 @@ test.describe("Error Sanitization", () => {
                     {
                       onShellReady() {
                         shellRendered = true;
-                        const body = new PassThrough();
-                        const stream = createReadableStreamFromReadable(body);
+                        const passthru = new stream.PassThrough();
+                        const body = createReadableStreamFromReadable(passthru);
 
                         responseHeaders.set("Content-Type", "text/html");
 
                         resolve(
-                          new Response(stream, {
+                          new Response(body, {
                             headers: responseHeaders,
                             status: responseStatusCode,
                           })
                         );
 
-                        pipe(body);
+                        pipe(passthru);
                       },
                       onShellError(error) {
                         reject(error);
@@ -565,6 +564,23 @@ test.describe("Error Sanitization", () => {
                 } else {
                   console.error("Dunno what this is");
                 }
+              }
+
+              function createReadableStreamFromReadable(
+                readable: stream.Readable
+              ): ReadableStream<Uint8Array> {
+                return new ReadableStream({
+                  start(controller) {
+                    readable.on("data", (chunk) => {
+                      controller.enqueue(
+                        new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+                      );
+                    });
+                    readable.on("end", () => {
+                      controller.close();
+                    });
+                  },
+                });
               }
             `,
             ...routeFiles,

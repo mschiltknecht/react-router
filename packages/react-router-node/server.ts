@@ -1,10 +1,6 @@
 import type { RequestListener } from "node:http";
 
-import type {
-  AppLoadContext,
-  ServerBuild,
-  UNSAFE_ServerMode,
-} from "react-router";
+import type { AppLoadContext, ServerBuild } from "react-router";
 import { createRequestHandler } from "react-router";
 import type { ClientAddress } from "@mjackson/node-fetch-server";
 import { createRequestListener as createRequestListener_ } from "@mjackson/node-fetch-server";
@@ -15,7 +11,7 @@ export interface RequestListenerOptions {
     request: Request,
     client: ClientAddress
   ) => AppLoadContext | Promise<AppLoadContext>;
-  mode?: UNSAFE_ServerMode;
+  mode?: string;
 }
 
 /**

@@ -1,9 +1,5 @@
 import type * as express from "express";
-import type {
-  AppLoadContext,
-  ServerBuild,
-  UNSAFE_ServerMode,
-} from "react-router";
+import type { AppLoadContext, ServerBuild } from "react-router";
 import { createRequestHandler as createRequestHandler_ } from "react-router";
 
 export interface RequestHandlerOptions {
@@ -12,7 +8,7 @@ export interface RequestHandlerOptions {
     req: express.Request,
     res: express.Response
   ) => Promise<AppLoadContext> | AppLoadContext;
-  mode?: UNSAFE_ServerMode;
+  mode?: string;
 }
 
 /**

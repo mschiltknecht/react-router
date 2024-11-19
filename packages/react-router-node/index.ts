@@ -1,6 +1,3 @@
-export {
-  type CreateRequestListenerOptions,
-  createRequestListener,
-} from "./server";
+export { type RequestListenerOptions, createRequestListener } from "./server";
 
 export { createFileSessionStorage } from "./sessions/fileStorage";

@@ -9,7 +9,7 @@ import { createRequestHandler } from "react-router";
 import type { ClientAddress } from "@mjackson/node-fetch-server";
 import { createRequestListener as createRequestListener_ } from "@mjackson/node-fetch-server";
 
-export interface CreateRequestListenerOptions {
+export interface RequestListenerOptions {
   build: ServerBuild | (() => ServerBuild | Promise<ServerBuild>);
   getLoadContext?: (
     request: Request,
@@ -25,7 +25,7 @@ export interface CreateRequestListenerOptions {
  * @returns A request listener that can be used with `http.createServer`.
  */
 export function createRequestListener(
-  options: CreateRequestListenerOptions
+  options: RequestListenerOptions
 ): RequestListener {
   let handleRequest = createRequestHandler(options.build, options.mode);
 

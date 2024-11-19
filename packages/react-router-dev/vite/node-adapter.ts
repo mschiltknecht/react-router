@@ -1,8 +1,7 @@
 import type { IncomingHttpHeaders, ServerResponse } from "node:http";
-import { once } from "node:events";
-import { Readable } from "node:stream";
+import * as stream from "node:stream";
+
 import { splitCookiesString } from "set-cookie-parser";
-import { createReadableStreamFromReadable } from "@react-router/node";
 import type * as Vite from "vite";
 
 import invariant from "../invariant";
@@ -32,25 +31,22 @@ function fromNodeHeaders(nodeHeaders: IncomingHttpHeaders): Headers {
 
 // Based on `createRemixRequest` in packages/react-router-express/server.ts
 export function fromNodeRequest(
-  nodeReq: Vite.Connect.IncomingMessage,
-  nodeRes: ServerResponse<Vite.Connect.IncomingMessage>
+  req: Vite.Connect.IncomingMessage,
+  res: ServerResponse<Vite.Connect.IncomingMessage>
 ): Request {
   let origin =
-    nodeReq.headers.origin && "null" !== nodeReq.headers.origin
-      ? nodeReq.headers.origin
-      : `http://${nodeReq.headers.host}`;
+    req.headers.origin && "null" !== req.headers.origin
+      ? req.headers.origin
+      : `http://${req.headers.host}`;
   // Use `req.originalUrl` so React Router is aware of the full path
-  invariant(
-    nodeReq.originalUrl,
-    "Expected `nodeReq.originalUrl` to be defined"
-  );
-  let url = new URL(nodeReq.originalUrl, origin);
+  invariant(req.originalUrl, "Expected `nodeReq.originalUrl` to be defined");
+  let url = new URL(req.originalUrl, origin);
 
   // Abort action/loaders once we can no longer write a response
   let controller: AbortController | null = new AbortController();
   let init: RequestInit = {
-    method: nodeReq.method,
-    headers: fromNodeHeaders(nodeReq.headers),
+    method: req.method,
+    headers: fromNodeHeaders(req.headers),
     signal: controller.signal,
   };
 
@@ -58,11 +54,11 @@ export function fromNodeRequest(
   // not yet sent a response (i.e., `close` without `finish`)
   // `finish` -> done rendering the response
   // `close` -> response can no longer be written to
-  nodeRes.on("finish", () => (controller = null));
-  nodeRes.on("close", () => controller?.abort());
+  res.on("finish", () => (controller = null));
+  res.on("close", () => controller?.abort());
 
-  if (nodeReq.method !== "GET" && nodeReq.method !== "HEAD") {
-    init.body = createReadableStreamFromReadable(nodeReq);
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    init.body = createReadableStreamFromReadable(req);
     (init as { duplex: "half" }).duplex = "half";
   }
 
@@ -71,29 +67,44 @@ export function fromNodeRequest(
 
 // Adapted from solid-start's `handleNodeResponse`:
 // https://github.com/solidjs/solid-start/blob/7398163869b489cce503c167e284891cf51a6613/packages/start/node/fetch.js#L162-L185
-export async function toNodeRequest(res: Response, nodeRes: ServerResponse) {
-  nodeRes.statusCode = res.status;
-  nodeRes.statusMessage = res.statusText;
+export async function toNodeRequest(response: Response, res: ServerResponse) {
+  res.statusCode = response.status;
+  res.statusMessage = response.statusText;
 
   let cookiesStrings = [];
 
-  for (let [name, value] of res.headers) {
+  for (let [name, value] of response.headers) {
     if (name === "set-cookie") {
       cookiesStrings.push(...splitCookiesString(value));
-    } else nodeRes.setHeader(name, value);
+    } else res.setHeader(name, value);
   }
 
   if (cookiesStrings.length) {
-    nodeRes.setHeader("set-cookie", cookiesStrings);
+    res.setHeader("set-cookie", cookiesStrings);
   }
 
-  if (res.body) {
-    // https://github.com/microsoft/TypeScript/issues/29867
-    let responseBody = res.body as unknown as AsyncIterable<Uint8Array>;
-    let readable = Readable.from(responseBody);
-    readable.pipe(nodeRes);
-    await once(readable, "end");
-  } else {
-    nodeRes.end();
+  if (response.body) {
+    for await (let chunk of response.body) {
+      res.write(chunk);
+    }
   }
+
+  res.end();
+}
+
+function createReadableStreamFromReadable(
+  readable: stream.Readable
+): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      readable.on("data", (chunk) => {
+        controller.enqueue(
+          new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+        );
+      });
+      readable.on("end", () => {
+        controller.close();
+      });
+    },
+  });
 }

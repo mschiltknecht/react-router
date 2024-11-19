@@ -1,13 +1,12 @@
 import express from "express";
 import supertest from "supertest";
-import { createRequest, createResponse } from "node-mocks-http";
 import { createRequestHandler as createRemixRequestHandler } from "react-router";
-
 import {
-  createRemixHeaders,
-  createRemixRequest,
-  createRequestHandler,
-} from "../server";
+  createRequest as createMockRequest,
+  createResponse as createMockResponse,
+} from "node-mocks-http";
+
+import { createHeaders, createRequest, createRequestHandler } from "../server";
 
 // We don't want to test that the remix server works here (that's what the
 // playwright tests do), we just want to test the express adapter
@@ -37,7 +36,7 @@ function createApp() {
   return app;
 }
 
-describe("express createRequestHandler", () => {
+describe("createRequestHandler", () => {
   describe("basic requests", () => {
     afterEach(() => {
       mockedCreateRequestHandler.mockReset();
@@ -155,26 +154,50 @@ describe("express createRequestHandler", () => {
   });
 });
 
-describe("express createRemixHeaders", () => {
+describe("createRequest", () => {
+  it("creates a request with the correct headers", async () => {
+    let expressRequest = createMockRequest({
+      url: "/foo/bar",
+      method: "GET",
+      protocol: "http",
+      hostname: "localhost",
+      headers: {
+        "Cache-Control": "max-age=300, s-maxage=3600",
+        Host: "localhost:3000",
+      },
+    });
+    let expressResponse = createMockResponse();
+
+    let request = createRequest(expressRequest, expressResponse);
+
+    expect(request.method).toBe("GET");
+    expect(request.headers.get("cache-control")).toBe(
+      "max-age=300, s-maxage=3600"
+    );
+    expect(request.headers.get("host")).toBe("localhost:3000");
+  });
+});
+
+describe("createHeaders", () => {
   describe("creates fetch headers from express headers", () => {
     it("handles empty headers", () => {
-      let headers = createRemixHeaders({});
+      let headers = createHeaders({});
       expect(Object.fromEntries(headers.entries())).toMatchInlineSnapshot(`{}`);
     });
 
     it("handles simple headers", () => {
-      let headers = createRemixHeaders({ "x-foo": "bar" });
+      let headers = createHeaders({ "x-foo": "bar" });
       expect(headers.get("x-foo")).toBe("bar");
     });
 
     it("handles multiple headers", () => {
-      let headers = createRemixHeaders({ "x-foo": "bar", "x-bar": "baz" });
+      let headers = createHeaders({ "x-foo": "bar", "x-bar": "baz" });
       expect(headers.get("x-foo")).toBe("bar");
       expect(headers.get("x-bar")).toBe("baz");
     });
 
     it("handles headers with multiple values", () => {
-      let headers = createRemixHeaders({
+      let headers = createHeaders({
         "x-foo": ["bar", "baz"],
         "x-bar": "baz",
       });
@@ -183,7 +206,7 @@ describe("express createRemixHeaders", () => {
     });
 
     it("handles multiple set-cookie headers", () => {
-      let headers = createRemixHeaders({
+      let headers = createHeaders({
         "set-cookie": [
           "__session=some_value; Path=/; Secure; HttpOnly; MaxAge=7200; SameSite=Lax",
           "__other=some_other_value; Path=/; Secure; HttpOnly; Expires=Wed, 21 Oct 2015 07:28:00 GMT; SameSite=Lax",
@@ -194,29 +217,5 @@ describe("express createRemixHeaders", () => {
         "__other=some_other_value; Path=/; Secure; HttpOnly; Expires=Wed, 21 Oct 2015 07:28:00 GMT; SameSite=Lax",
       ]);
     });
-  });
-});
-
-describe("express createRemixRequest", () => {
-  it("creates a request with the correct headers", async () => {
-    let expressRequest = createRequest({
-      url: "/foo/bar",
-      method: "GET",
-      protocol: "http",
-      hostname: "localhost",
-      headers: {
-        "Cache-Control": "max-age=300, s-maxage=3600",
-        Host: "localhost:3000",
-      },
-    });
-    let expressResponse = createResponse();
-
-    let remixRequest = createRemixRequest(expressRequest, expressResponse);
-
-    expect(remixRequest.method).toBe("GET");
-    expect(remixRequest.headers.get("cache-control")).toBe(
-      "max-age=300, s-maxage=3600"
-    );
-    expect(remixRequest.headers.get("host")).toBe("localhost:3000");
   });
 });

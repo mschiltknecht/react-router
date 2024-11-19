@@ -1,2 +1,1 @@
-export type { GetLoadContextFunction, RequestHandler } from "./server";
-export { createRequestHandler } from "./server";
+export { type RequestHandlerOptions, createRequestHandler } from "./server";
